@@ -1,7 +1,7 @@
 /*******************************************************************************
  * ALGO VISION - Searching & Sorting Algorithm Visualizer
  * Single Translation Unit: main.cpp (OpenGL + FreeGLUT)
- * MSVC 2022 & GCC 15 Compatible - 100% Pure ASCII
+ * MSVC 2022 & GCC 15 Compatible - 100% Unclipped, Multi-Line Array Preview
  ******************************************************************************/
 
 #include <iostream>
@@ -15,13 +15,23 @@
 
 #include <GL/glut.h>
 
- // ============================================================================
- // CONSTANTS & ENUMS
- // ============================================================================
+// ============================================================================
+// CONSTANTS & ENUMS
+// ============================================================================
 enum class ScreenState {
-    HOME_MENU,
+    CONFIG_SCREEN,
     SORTING_VIEW,
     SEARCHING_VIEW
+};
+
+enum class InputMode {
+    MANUAL,
+    RANDOM
+};
+
+enum class Category {
+    SORTING,
+    SEARCHING
 };
 
 enum class SortAlgorithm {
@@ -49,40 +59,45 @@ enum class OperationType {
     COMPLETED
 };
 
-struct Color4f {
-    float r;
-    float g;
-    float b;
-    float a;
+enum class TextRole {
+    DISPLAY,
+    SUBTITLE,
+    BODY,
+    MONO
+};
 
+struct Color4f {
+    float r, g, b, a;
     Color4f() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {}
     Color4f(float r_, float g_, float b_, float a_ = 1.0f)
-        : r(r_), g(g_), b(b_), a(a_) {
-    }
+        : r(r_), g(g_), b(b_), a(a_) {}
 };
 
 namespace Palette {
-    const Color4f BG_DARK = Color4f(0.06f, 0.08f, 0.11f, 1.0f);
-    const Color4f PANEL_BG = Color4f(0.10f, 0.13f, 0.18f, 0.96f);
-    const Color4f CARD_BG = Color4f(0.15f, 0.19f, 0.25f, 1.0f);
-    const Color4f CARD_BORDER = Color4f(0.24f, 0.31f, 0.42f, 1.0f);
+    const Color4f BG_DARK         = Color4f(0.08f, 0.10f, 0.14f, 1.0f);
+    const Color4f PANEL_BG        = Color4f(0.12f, 0.15f, 0.20f, 0.98f);
+    const Color4f CARD_BG         = Color4f(0.12f, 0.15f, 0.20f, 0.98f);
+    const Color4f CARD_BORDER     = Color4f(0.22f, 0.27f, 0.36f, 0.90f);
+    const Color4f CARD_BORDER_ACT = Color4f(0.00f, 0.80f, 1.00f, 1.0f);
 
-    // High-Contrast Animation Colors
-    const Color4f BAR_DEFAULT = Color4f(0.10f, 0.58f, 0.98f, 1.0f); // Vivid Tech Blue
-    const Color4f COMPARE = Color4f(1.00f, 0.82f, 0.00f, 1.0f); // Vivid Gold/Yellow
-    const Color4f ACTIVE_OP = Color4f(1.00f, 0.18f, 0.18f, 1.0f); // Intense Crimson Red
-    const Color4f SUCCESS = Color4f(0.00f, 0.90f, 0.46f, 1.0f); // Vivid Emerald Green
-    const Color4f INACTIVE = Color4f(0.20f, 0.24f, 0.30f, 0.5f); // Deep Muted Charcoal
-    const Color4f BOUNDARY = Color4f(0.70f, 0.35f, 0.95f, 1.0f); // Electric Purple
+    const Color4f BTN_IDLE        = Color4f(0.16f, 0.20f, 0.28f, 1.0f);
+    const Color4f BTN_HOVER       = Color4f(0.24f, 0.30f, 0.42f, 1.0f);
+    const Color4f BTN_ACTIVE      = Color4f(0.00f, 0.58f, 0.96f, 1.0f);
+    const Color4f BTN_LAUNCH      = Color4f(0.00f, 0.75f, 0.45f, 1.0f);
+    const Color4f BTN_LAUNCH_HOV  = Color4f(0.00f, 0.90f, 0.55f, 1.0f);
+    const Color4f BTN_DANGER      = Color4f(0.90f, 0.22f, 0.25f, 1.0f);
+    const Color4f BTN_PLAYING     = Color4f(1.00f, 0.55f, 0.00f, 1.0f);
 
-    // Typography & UI
-    const Color4f TEXT_WHITE = Color4f(0.98f, 0.98f, 1.00f, 1.0f);
-    const Color4f TEXT_MUTED = Color4f(0.65f, 0.72f, 0.82f, 1.0f);
-    const Color4f BTN_NORMAL = Color4f(0.18f, 0.38f, 0.68f, 1.0f);
-    const Color4f BTN_HOVER = Color4f(0.25f, 0.48f, 0.82f, 1.0f);
-    const Color4f BTN_ACTIVE = Color4f(0.00f, 0.60f, 1.00f, 1.0f);
-    const Color4f BTN_DANGER = Color4f(0.85f, 0.20f, 0.20f, 1.0f);
-    const Color4f BTN_PLAYING = Color4f(0.90f, 0.40f, 0.00f, 1.0f);
+    const Color4f BAR_DEFAULT     = Color4f(0.00f, 0.65f, 1.00f, 1.0f);
+    const Color4f COMPARE         = Color4f(1.00f, 0.82f, 0.00f, 1.0f);
+    const Color4f ACTIVE_OP       = Color4f(1.00f, 0.18f, 0.22f, 1.0f);
+    const Color4f SUCCESS         = Color4f(0.00f, 0.95f, 0.50f, 1.0f);
+    const Color4f INACTIVE        = Color4f(0.18f, 0.22f, 0.28f, 0.4f);
+    const Color4f BOUNDARY        = Color4f(0.75f, 0.40f, 1.00f, 1.0f);
+
+    const Color4f TEXT_WHITE      = Color4f(0.96f, 0.98f, 1.00f, 1.0f);
+    const Color4f TEXT_MUTED      = Color4f(0.60f, 0.68f, 0.78f, 1.0f);
+    const Color4f TEXT_ACCENT     = Color4f(0.00f, 0.85f, 1.00f, 1.0f);
 }
 
 // ============================================================================
@@ -110,6 +125,7 @@ struct Button {
     float h = 0.0f;
     std::string label = "";
     Color4f color;
+    bool isActive = false;
     bool isHovered = false;
 
     bool contains(float px, float py) const {
@@ -118,7 +134,15 @@ struct Button {
 };
 
 // ============================================================================
-// 2D RENDERING PRIMITIVES
+// FORWARD DECLARATIONS
+// ============================================================================
+static void renderModernConfigDashboard();
+static void renderSortingView();
+static void renderSearchingView();
+static void renderVisualizerUIOverlay();
+
+// ============================================================================
+// 2D RENDERING & TYPOGRAPHY    
 // ============================================================================
 static void drawQuad(float x, float y, float w, float h, const Color4f& color) {
     glColor4f(color.r, color.g, color.b, color.a);
@@ -137,20 +161,28 @@ static void drawQuadOutline(float x, float y, float w, float h, float thickness,
     drawQuad(x + w - thickness, y, thickness, h, color);
 }
 
-static void drawBitmapString(float x, float y, void* font, const std::string& str, const Color4f& color) {
-    glColor4f(color.r, color.g, color.b, color.a);
-    glRasterPos2f(x, y);
-    for (size_t i = 0; i < str.length(); ++i) {
-        glutBitmapCharacter(font, str[i]);
+static void* getFontForRole(TextRole role) {
+    switch (role) {
+    case TextRole::DISPLAY:  return GLUT_BITMAP_TIMES_ROMAN_24;
+    case TextRole::SUBTITLE: return GLUT_BITMAP_HELVETICA_18;
+    case TextRole::BODY:     return GLUT_BITMAP_HELVETICA_12;
+    case TextRole::MONO:
+    default:                 return GLUT_BITMAP_9_BY_15;
     }
 }
 
-static int getStringWidth(void* font, const std::string& str) {
-    int width = 0;
-    for (size_t i = 0; i < str.length(); ++i) {
-        width += glutBitmapWidth(font, str[i]);
-    }
-    return width;
+static int getTextWidth(const std::string& str, TextRole role) {
+    void* font = getFontForRole(role);
+    int total = 0;
+    for (char c : str) total += glutBitmapWidth(font, c);
+    return total;
+}
+
+static void drawText(float x, float y, const std::string& str, TextRole role, const Color4f& color) {
+    void* font = getFontForRole(role);
+    glColor4f(color.r, color.g, color.b, color.a);
+    glRasterPos2f(x, y);
+    for (char c : str) glutBitmapCharacter(font, c);
 }
 
 // ============================================================================
@@ -167,7 +199,7 @@ public:
         AlgorithmSnapshot initial;
         initial.arrayState = arr;
         initial.finalized = sortedFlags;
-        initial.description = "Bubble Sort initialized. Compares adjacent elements and bubbles largest to the end.";
+        initial.description = "Bubble Sort initialized. Adjacent elements compared and swapped if inverted.";
         timeline.push_back(initial);
 
         for (int i = 0; i < n - 1; ++i) {
@@ -183,7 +215,7 @@ public:
                 cmp.comparisons = comps;
                 cmp.swaps = swaps;
                 cmp.description = "Comparing arr[" + std::to_string(j) + "] (" + std::to_string(arr[j]) +
-                    ") and arr[" + std::to_string(j + 1) + "] (" + std::to_string(arr[j + 1]) + ").";
+                                  ") and arr[" + std::to_string(j + 1) + "] (" + std::to_string(arr[j + 1]) + ").";
                 timeline.push_back(cmp);
 
                 if (arr[j] > arr[j + 1]) {
@@ -243,7 +275,7 @@ public:
             base.boundL = i;
             base.comparisons = comps;
             base.swaps = swaps;
-            base.description = "Current minimum initialized to index " + std::to_string(minIdx) + " (" + std::to_string(arr[minIdx]) + ").";
+            base.description = "Current minimum set to index " + std::to_string(minIdx) + " (" + std::to_string(arr[minIdx]) + ").";
             timeline.push_back(base);
 
             for (int j = i + 1; j < n; ++j) {
@@ -270,7 +302,7 @@ public:
                     newMin.boundL = i;
                     newMin.comparisons = comps;
                     newMin.swaps = swaps;
-                    newMin.description = "New minimum discovered at index " + std::to_string(minIdx) + " (" + std::to_string(arr[minIdx]) + ").";
+                    newMin.description = "New minimum found at index " + std::to_string(minIdx) + " (" + std::to_string(arr[minIdx]) + ").";
                     timeline.push_back(newMin);
                 }
             }
@@ -363,8 +395,7 @@ public:
                     shf.description = "Shifted arr[" + std::to_string(j) + "] (" + std::to_string(arr[j]) + ") into position " + std::to_string(j + 1) + ".";
                     timeline.push_back(shf);
                     j--;
-                }
-                else {
+                } else {
                     break;
                 }
             }
@@ -425,7 +456,7 @@ public:
             splitSnap.comparisons = comps;
             splitSnap.swaps = overwrites;
             splitSnap.description = "Merging subarrays [" + std::to_string(left) + ".." + std::to_string(mid) +
-                "] and [" + std::to_string(mid + 1) + ".." + std::to_string(right) + "].";
+                                    "] and [" + std::to_string(mid + 1) + ".." + std::to_string(right) + "].";
             timeline.push_back(splitSnap);
 
             while (i < leftSub.size() && j < rightSub.size()) {
@@ -447,8 +478,7 @@ public:
                 if (leftSub[i] <= rightSub[j]) {
                     arr[k] = leftSub[i];
                     i++;
-                }
-                else {
+                } else {
                     arr[k] = rightSub[j];
                     j++;
                 }
@@ -506,7 +536,7 @@ public:
             if (left == 0 && right == n - 1) {
                 std::fill(sortedFlags.begin(), sortedFlags.end(), true);
             }
-            };
+        };
 
         auto mergeSortInternal = [&](auto& self, int left, int right) -> void {
             if (left >= right) return;
@@ -514,7 +544,7 @@ public:
             self(self, left, mid);
             self(self, mid + 1, right);
             merge(merge, left, mid, right);
-            };
+        };
 
         mergeSortInternal(mergeSortInternal, 0, n - 1);
 
@@ -619,7 +649,7 @@ public:
             step.target = target;
             step.comparisons = comps;
             step.description = "Checking mid index " + std::to_string(mid) + " (Value: " + std::to_string(arr[mid]) +
-                ") within [" + std::to_string(low) + ".." + std::to_string(high) + "].";
+                               ") within [" + std::to_string(low) + ".." + std::to_string(high) + "].";
             timeline.push_back(step);
 
             if (arr[mid] == target) {
@@ -650,10 +680,9 @@ public:
                 upd.target = target;
                 upd.comparisons = comps;
                 upd.description = "arr[" + std::to_string(mid) + "] < target. Discarding left half; search interval is now [" +
-                    std::to_string(low) + ".." + std::to_string(high) + "].";
+                                  std::to_string(low) + ".." + std::to_string(high) + "].";
                 timeline.push_back(upd);
-            }
-            else {
+            } else {
                 high = mid - 1;
                 AlgorithmSnapshot upd;
                 upd.arrayState = arr;
@@ -665,7 +694,7 @@ public:
                 upd.target = target;
                 upd.comparisons = comps;
                 upd.description = "arr[" + std::to_string(mid) + "] > target. Discarding right half; search interval is now [" +
-                    std::to_string(low) + ".." + std::to_string(high) + "].";
+                                  std::to_string(low) + ".." + std::to_string(high) + "].";
                 timeline.push_back(upd);
             }
         }
@@ -677,8 +706,6 @@ public:
             miss.opType = OperationType::NOT_FOUND;
             miss.target = target;
             miss.comparisons = comps;
-            miss.boundL = low;
-            miss.boundR = high;
             miss.description = "Binary Search complete. Target " + std::to_string(target) + " not found.";
             timeline.push_back(miss);
         }
@@ -792,7 +819,9 @@ public:
     int windowW = 1280;
     int windowH = 720;
 
-    ScreenState screen = ScreenState::HOME_MENU;
+    ScreenState screen = ScreenState::CONFIG_SCREEN;
+    InputMode inputMode = InputMode::MANUAL;
+    Category selectedCategory = Category::SORTING;
 
     SortAlgorithm currentSortAlg = SortAlgorithm::BUBBLE_SORT;
     std::vector<int> sortOriginal;
@@ -806,13 +835,16 @@ public:
     size_t searchIndex = 0;
     bool searchPlaying = false;
     int searchTarget = 42;
-    bool autoSortedNotice = false;
+    std::string searchTargetInputStr = "42";
 
-    int arraySize = 20;
+    int arraySize = 13;
+    std::string manualInputStr = "42, 18, 65, 8, 93, 27, 51, 14, 76, 35, 88, 3, 59";
+    bool typingInManualInput = false;
+    bool typingInTargetInput = false;
+    std::string notificationMessage = "";
 
-    // Discrete speed ladder (ops/sec)
     const std::vector<int> speedSteps = { 1, 2, 4, 6, 8, 12, 16, 24, 32, 48, 64 };
-    size_t speedIndex = 3; // Defaults to 6 ops/sec
+    size_t speedIndex = 3;
 
     std::vector<Button> buttons;
 
@@ -820,7 +852,11 @@ public:
         return speedSteps[speedIndex];
     }
 
-    void addBtn(int id, float x, float y, float w, float h, const std::string& label, const Color4f& color = Color4f()) {
+    float getSpeedMultiplier() const {
+        return static_cast<float>(getOpsPerSecond()) / 6.0f;
+    }
+
+    void addBtn(int id, float x, float y, float w, float h, const std::string& label, const Color4f& color = Color4f(), bool active = false) {
         Button b;
         b.id = id;
         b.x = x;
@@ -829,47 +865,68 @@ public:
         b.h = h;
         b.label = label;
         b.color = color;
+        b.isActive = active;
         buttons.push_back(b);
     }
 
     void init() {
         srand(static_cast<unsigned int>(time(nullptr)));
-        generateRandomSortArray();
-        generateRandomSearchArray();
+        parseManualInput();
         rebuildButtons();
     }
 
-    void generateRandomSortArray() {
-        sortOriginal.clear();
-        for (int i = 0; i < arraySize; ++i) {
-            sortOriginal.push_back(10 + rand() % 90);
+    void parseManualInput() {
+        std::vector<int> parsed;
+        std::stringstream ss(manualInputStr);
+        std::string token;
+        while (std::getline(ss, token, ',')) {
+            size_t start = token.find_first_not_of(" \t\r\n");
+            size_t end = token.find_last_not_of(" \t\r\n");
+            if (start != std::string::npos && end != std::string::npos) {
+                token = token.substr(start, end - start + 1);
+                try {
+                    int val = std::stoi(token);
+                    if (val >= 1 && val <= 100) {
+                        parsed.push_back(val);
+                    }
+                } catch (...) {}
+            }
         }
-        buildSortTimeline();
+        if (parsed.size() >= 3 && parsed.size() <= 50) {
+            sortOriginal = parsed;
+            searchOriginal = parsed;
+            arraySize = static_cast<int>(parsed.size());
+            if (!searchOriginal.empty()) {
+                searchTarget = searchOriginal[0];
+                searchTargetInputStr = std::to_string(searchTarget);
+            }
+        }
     }
 
-    void generateRandomSearchArray() {
+    void generateRandomArray() {
+        sortOriginal.clear();
         searchOriginal.clear();
         for (int i = 0; i < arraySize; ++i) {
-            searchOriginal.push_back(10 + rand() % 90);
+            int val = 3 + rand() % 97;
+            sortOriginal.push_back(val);
+            searchOriginal.push_back(val);
         }
-
-        if (currentSearchAlg == SearchAlgorithm::BINARY_SEARCH || currentSearchAlg == SearchAlgorithm::JUMP_SEARCH) {
-            std::sort(searchOriginal.begin(), searchOriginal.end());
-            autoSortedNotice = true;
-        }
-        else {
-            autoSortedNotice = false;
-        }
-
         if (!searchOriginal.empty()) {
             searchTarget = searchOriginal[rand() % searchOriginal.size()];
+            searchTargetInputStr = std::to_string(searchTarget);
         }
-        buildSearchTimeline();
+        std::string s = "";
+        for (size_t i = 0; i < sortOriginal.size(); ++i) {
+            s += std::to_string(sortOriginal[i]);
+            if (i + 1 < sortOriginal.size()) s += ", ";
+        }
+        manualInputStr = s;
     }
 
     void buildSortTimeline() {
-        sortPlaying = false;
+        sortPlaying = true;
         sortIndex = 0;
+        notificationMessage = "";
         switch (currentSortAlg) {
         case SortAlgorithm::BUBBLE_SORT:
             sortTimeline = AlgorithmEngine::generateBubbleSort(sortOriginal);
@@ -887,13 +944,14 @@ public:
     }
 
     void buildSearchTimeline() {
-        searchPlaying = false;
+        searchPlaying = true;
         searchIndex = 0;
+        notificationMessage = "";
 
         if (currentSearchAlg == SearchAlgorithm::BINARY_SEARCH || currentSearchAlg == SearchAlgorithm::JUMP_SEARCH) {
             if (!std::is_sorted(searchOriginal.begin(), searchOriginal.end())) {
                 std::sort(searchOriginal.begin(), searchOriginal.end());
-                autoSortedNotice = true;
+                notificationMessage = "Notice: Binary & Jump Search require sorted data. Array automatically sorted!";
             }
         }
 
@@ -913,69 +971,96 @@ public:
     void rebuildButtons() {
         buttons.clear();
 
-        if (screen == ScreenState::HOME_MENU) {
-            float bw = 340.0f;
-            float bh = 54.0f;
-            float bx = (static_cast<float>(windowW) - bw) * 0.5f;
-            float startY = 320.0f;
+        if (screen == ScreenState::CONFIG_SCREEN) {
+            // Section 1: Array Input Mode Tabs
+            addBtn(101, 55.0f, 175.0f, 155.0f, 44.0f, "Manual Input", Palette::BTN_IDLE, inputMode == InputMode::MANUAL);
+            addBtn(102, 225.0f, 175.0f, 175.0f, 44.0f, "Random Generator", Palette::BTN_IDLE, inputMode == InputMode::RANDOM);
 
-            addBtn(1, bx, startY, bw, bh, "SORTING ALGORITHMS", Palette::BTN_NORMAL);
-            addBtn(2, bx, startY + 70.0f, bw, bh, "SEARCHING ALGORITHMS", Color4f(0.12f, 0.65f, 0.45f, 1.0f));
-            addBtn(3, bx, startY + 140.0f, bw, bh, "EXIT VISUALIZER", Palette::BTN_DANGER);
-        }
-        else {
-            addBtn(10, 20.0f, 18.0f, 140.0f, 36.0f, "< Menu", Palette::CARD_BG);
+            if (inputMode == InputMode::RANDOM) {
+                addBtn(103, 400.0f, 240.0f, 160.0f, 42.0f, "Generate Array", Palette::BTN_IDLE);
+            }
 
-            float tabX = 175.0f;
+            // Section 2: Category Tabs
+            float card2X = 665.0f;
+            addBtn(201, card2X + 20.0f, 175.0f, 150.0f, 44.0f, "Sorting", Palette::BTN_IDLE, selectedCategory == Category::SORTING);
+            addBtn(202, card2X + 185.0f, 175.0f, 150.0f, 44.0f, "Searching", Palette::BTN_IDLE, selectedCategory == Category::SEARCHING);
+
+            if (selectedCategory == Category::SORTING) {
+                // 2x2 Clean Responsive Grid to Prevent Overflow
+                float btnW = 160.0f;
+                float btnH = 42.0f;
+                float col1X = card2X + 20.0f;
+                float col2X = card2X + 195.0f;
+                float row1Y = 270.0f;
+                float row2Y = 325.0f;
+
+                addBtn(301, col1X, row1Y, btnW, btnH, "Bubble Sort", Palette::BTN_IDLE, currentSortAlg == SortAlgorithm::BUBBLE_SORT);
+                addBtn(302, col2X, row1Y, btnW, btnH, "Selection Sort", Palette::BTN_IDLE, currentSortAlg == SortAlgorithm::SELECTION_SORT);
+                addBtn(303, col1X, row2Y, btnW, btnH, "Insertion Sort", Palette::BTN_IDLE, currentSortAlg == SortAlgorithm::INSERTION_SORT);
+                addBtn(304, col2X, row2Y, btnW, btnH, "Merge Sort", Palette::BTN_IDLE, currentSortAlg == SortAlgorithm::MERGE_SORT);
+            } else {
+                float btnW = 145.0f;
+                float btnH = 42.0f;
+                float col1X = card2X + 20.0f;
+                float col2X = card2X + 180.0f;
+                float col3X = card2X + 340.0f;
+
+                addBtn(311, col1X, 270.0f, btnW, btnH, "Linear Search", Palette::BTN_IDLE, currentSearchAlg == SearchAlgorithm::LINEAR_SEARCH);
+                addBtn(312, col2X, 270.0f, btnW, btnH, "Binary Search", Palette::BTN_IDLE, currentSearchAlg == SearchAlgorithm::BINARY_SEARCH);
+                addBtn(313, col3X, 270.0f, btnW, btnH, "Jump Search", Palette::BTN_IDLE, currentSearchAlg == SearchAlgorithm::JUMP_SEARCH);
+
+                addBtn(314, card2X + 160.0f, 385.0f, 230.0f, 42.0f, "Pick Random Target", Palette::BTN_IDLE);
+            }
+
+            // Launch Action Button
+            addBtn(400, 55.0f, static_cast<float>(windowH) - 105.0f, 280.0f, 54.0f, "START VISUALIZATION", Palette::BTN_LAUNCH);
+        } else {
+            addBtn(10, 25.0f, 20.0f, 145.0f, 40.0f, "< Back to Config", Palette::CARD_BG);
+
+            float tabX = 185.0f;
             if (screen == ScreenState::SORTING_VIEW) {
                 Color4f c1 = (currentSortAlg == SortAlgorithm::BUBBLE_SORT) ? Palette::BTN_ACTIVE : Palette::CARD_BG;
                 Color4f c2 = (currentSortAlg == SortAlgorithm::SELECTION_SORT) ? Palette::BTN_ACTIVE : Palette::CARD_BG;
                 Color4f c3 = (currentSortAlg == SortAlgorithm::INSERTION_SORT) ? Palette::BTN_ACTIVE : Palette::CARD_BG;
                 Color4f c4 = (currentSortAlg == SortAlgorithm::MERGE_SORT) ? Palette::BTN_ACTIVE : Palette::CARD_BG;
 
-                addBtn(20, tabX, 18.0f, 125.0f, 36.0f, "Bubble Sort", c1);
-                addBtn(21, tabX + 135.0f, 18.0f, 125.0f, 36.0f, "Selection Sort", c2);
-                addBtn(22, tabX + 270.0f, 18.0f, 125.0f, 36.0f, "Insertion Sort", c3);
-                addBtn(23, tabX + 405.0f, 18.0f, 125.0f, 36.0f, "Merge Sort", c4);
-            }
-            else {
+                addBtn(20, tabX, 20.0f, 125.0f, 40.0f, "Bubble Sort", c1);
+                addBtn(21, tabX + 135.0f, 20.0f, 130.0f, 40.0f, "Selection Sort", c2);
+                addBtn(22, tabX + 275.0f, 20.0f, 130.0f, 40.0f, "Insertion Sort", c3);
+                addBtn(23, tabX + 415.0f, 20.0f, 125.0f, 40.0f, "Merge Sort", c4);
+            } else {
                 Color4f c1 = (currentSearchAlg == SearchAlgorithm::LINEAR_SEARCH) ? Palette::BTN_ACTIVE : Palette::CARD_BG;
                 Color4f c2 = (currentSearchAlg == SearchAlgorithm::BINARY_SEARCH) ? Palette::BTN_ACTIVE : Palette::CARD_BG;
                 Color4f c3 = (currentSearchAlg == SearchAlgorithm::JUMP_SEARCH) ? Palette::BTN_ACTIVE : Palette::CARD_BG;
 
-                addBtn(30, tabX, 18.0f, 135.0f, 36.0f, "Linear Search", c1);
-                addBtn(31, tabX + 145.0f, 18.0f, 135.0f, 36.0f, "Binary Search", c2);
-                addBtn(32, tabX + 290.0f, 18.0f, 135.0f, 36.0f, "Jump Search", c3);
+                addBtn(30, tabX, 20.0f, 140.0f, 40.0f, "Linear Search", c1);
+                addBtn(31, tabX + 150.0f, 20.0f, 140.0f, 40.0f, "Binary Search", c2);
+                addBtn(32, tabX + 300.0f, 20.0f, 140.0f, 40.0f, "Jump Search", c3);
             }
 
-            float rx = static_cast<float>(windowW) - 325.0f;
-            float ry = 72.0f;
+            float rx = static_cast<float>(windowW) - 340.0f;
+            float ry = 75.0f;
 
             bool isPlay = (screen == ScreenState::SORTING_VIEW) ? sortPlaying : searchPlaying;
             Color4f playCol = isPlay ? Palette::BTN_PLAYING : Palette::SUCCESS;
-            std::string playLbl = isPlay ? "PAUSE" : "PLAY";
+            std::string playLbl = isPlay ? "PAUSE (Space)" : "PLAY (Space)";
 
-            // Row 1: Primary Controls
-            addBtn(40, rx, ry, 95.0f, 36.0f, playLbl, playCol);
-            addBtn(41, rx + 105.0f, ry, 95.0f, 36.0f, "Step >", Palette::BTN_NORMAL);
-            addBtn(42, rx + 210.0f, ry, 95.0f, 36.0f, "Step <", Palette::BTN_NORMAL);
+            addBtn(40, rx, ry, 130.0f, 40.0f, playLbl, playCol);
+            addBtn(41, rx + 140.0f, ry, 85.0f, 40.0f, "Step >", Palette::BTN_IDLE);
+            addBtn(42, rx + 235.0f, ry, 85.0f, 40.0f, "Step <", Palette::BTN_IDLE);
 
-            // Row 2: Reset & Random
-            addBtn(43, rx, ry + 46.0f, 145.0f, 32.0f, "Replay (Reset)", Palette::BTN_NORMAL);
-            addBtn(44, rx + 155.0f, ry + 46.0f, 150.0f, 32.0f, "New Random Array", Palette::BTN_NORMAL);
+            addBtn(43, rx, ry + 50.0f, 150.0f, 34.0f, "Replay (R)", Palette::BTN_IDLE);
+            addBtn(44, rx + 160.0f, ry + 50.0f, 160.0f, 34.0f, "New Random Array", Palette::BTN_IDLE);
 
-            // Row 3: Speed Controls
-            addBtn(45, rx, ry + 88.0f, 145.0f, 30.0f, "Speed -", Palette::CARD_BG);
-            addBtn(46, rx + 155.0f, ry + 88.0f, 150.0f, 30.0f, "Speed +", Palette::CARD_BG);
+            addBtn(45, rx, ry + 92.0f, 150.0f, 32.0f, "Speed - [Down]", Palette::CARD_BG);
+            addBtn(46, rx + 160.0f, ry + 92.0f, 160.0f, 32.0f, "Speed + [Up]", Palette::CARD_BG);
 
-            // Row 4: Size Controls
-            addBtn(47, rx, ry + 128.0f, 145.0f, 30.0f, "Array Size -", Palette::CARD_BG);
-            addBtn(48, rx + 155.0f, ry + 128.0f, 150.0f, 30.0f, "Array Size +", Palette::CARD_BG);
+            addBtn(47, rx, ry + 132.0f, 150.0f, 32.0f, "Array Size -", Palette::CARD_BG);
+            addBtn(48, rx + 160.0f, ry + 132.0f, 160.0f, 32.0f, "Array Size +", Palette::CARD_BG);
 
-            // Row 5: Searching Targets
             if (screen == ScreenState::SEARCHING_VIEW) {
-                addBtn(50, rx, ry + 168.0f, 145.0f, 30.0f, "Target: In Array", Palette::BTN_NORMAL);
-                addBtn(51, rx + 155.0f, ry + 168.0f, 150.0f, 30.0f, "Target: Missing", Palette::BTN_DANGER);
+                addBtn(50, rx, ry + 172.0f, 150.0f, 32.0f, "Target: In Array", Palette::BTN_IDLE);
+                addBtn(51, rx + 160.0f, ry + 172.0f, 160.0f, 32.0f, "Target: Missing", Palette::BTN_DANGER);
             }
         }
     }
@@ -984,33 +1069,8 @@ public:
 static Application app;
 
 // ============================================================================
-// RENDERING VIEWS
+// VISUALIZER RENDERING IMPLEMENTATION
 // ============================================================================
-static void renderHomeScreen() {
-    float cx = static_cast<float>(app.windowW) * 0.5f;
-
-    std::string title = "ALGO VISION";
-    float titleW = static_cast<float>(getStringWidth(GLUT_BITMAP_TIMES_ROMAN_24, title));
-    drawBitmapString(cx - titleW * 0.5f, 160.0f, GLUT_BITMAP_TIMES_ROMAN_24, title, Palette::BTN_ACTIVE);
-
-    std::string sub = "Searching & Sorting Algorithm Visualizer | OpenGL Core FreeGLUT";
-    float subW = static_cast<float>(getStringWidth(GLUT_BITMAP_HELVETICA_18, sub));
-    drawBitmapString(cx - subW * 0.5f, 210.0f, GLUT_BITMAP_HELVETICA_18, sub, Palette::TEXT_WHITE);
-
-    std::string desc = "Real-time state timeline simulation with step-by-step memory inspections.";
-    float descW = static_cast<float>(getStringWidth(GLUT_BITMAP_HELVETICA_12, desc));
-    drawBitmapString(cx - descW * 0.5f, 250.0f, GLUT_BITMAP_HELVETICA_12, desc, Palette::TEXT_MUTED);
-
-    for (size_t i = 0; i < app.buttons.size(); ++i) {
-        const Button& b = app.buttons[i];
-        Color4f c = b.isHovered ? Palette::BTN_HOVER : b.color;
-        drawQuad(b.x, b.y, b.w, b.h, c);
-        drawQuadOutline(b.x, b.y, b.w, b.h, 1.5f, Palette::CARD_BORDER);
-        int strW = getStringWidth(GLUT_BITMAP_HELVETICA_18, b.label);
-        drawBitmapString(b.x + (b.w - static_cast<float>(strW)) * 0.5f, b.y + b.h * 0.62f, GLUT_BITMAP_HELVETICA_18, b.label, Palette::TEXT_WHITE);
-    }
-}
-
 static void renderSortingView() {
     if (app.sortTimeline.empty()) return;
     const AlgorithmSnapshot& snap = app.sortTimeline[app.sortIndex];
@@ -1018,7 +1078,7 @@ static void renderSortingView() {
     int n = static_cast<int>(arr.size());
 
     float leftMargin = 40.0f;
-    float rightMargin = 350.0f;
+    float rightMargin = 360.0f;
     float topMargin = 85.0f;
     float bottomMargin = 160.0f;
 
@@ -1026,7 +1086,6 @@ static void renderSortingView() {
     float renderH = static_cast<float>(app.windowH) - topMargin - bottomMargin;
     float baselineY = topMargin + renderH;
 
-    // Ground line
     drawQuad(leftMargin, baselineY + 2.0f, renderW, 2.0f, Palette::CARD_BORDER);
 
     float slotW = renderW / static_cast<float>(n);
@@ -1047,23 +1106,18 @@ static void renderSortingView() {
 
         if (snap.opType == OperationType::COMPLETED || (i < static_cast<int>(snap.finalized.size()) && snap.finalized[static_cast<size_t>(i)])) {
             barColor = Palette::SUCCESS;
-        }
-        else if (i == snap.indexA || i == snap.indexB) {
+        } else if (i == snap.indexA || i == snap.indexB) {
             if (snap.opType == OperationType::COMPARE) {
                 barColor = Palette::COMPARE;
-            }
-            else if (snap.opType == OperationType::SWAP || snap.opType == OperationType::OVERWRITE) {
+            } else if (snap.opType == OperationType::SWAP || snap.opType == OperationType::OVERWRITE) {
+                barColor = Palette::ACTIVE_OP;
+            } else if (snap.opType == OperationType::VISIT) {
                 barColor = Palette::ACTIVE_OP;
             }
-            else if (snap.opType == OperationType::VISIT) {
-                barColor = Palette::ACTIVE_OP;
-            }
-        }
-        else if (snap.boundL >= 0 && snap.boundR >= 0) {
+        } else if (snap.boundL >= 0 && snap.boundR >= 0) {
             if (i >= snap.boundL && i <= snap.boundR) {
                 barColor = Palette::BOUNDARY;
-            }
-            else {
+            } else {
                 barColor = Palette::INACTIVE;
             }
         }
@@ -1071,10 +1125,10 @@ static void renderSortingView() {
         drawQuad(x, y, barW, h, barColor);
         drawQuad(x, y, barW, 4.0f, Color4f(1.0f, 1.0f, 1.0f, 0.6f));
 
-        if (barW >= 18.0f) {
+        if (barW >= 16.0f) {
             std::string valStr = std::to_string(arr[i]);
-            int sw = getStringWidth(GLUT_BITMAP_HELVETICA_12, valStr);
-            drawBitmapString(x + (barW - static_cast<float>(sw)) * 0.5f, baselineY + 18.0f, GLUT_BITMAP_HELVETICA_12, valStr, Palette::TEXT_WHITE);
+            int sw = getTextWidth(valStr, TextRole::MONO);
+            drawText(x + (barW - static_cast<float>(sw)) * 0.5f, baselineY + 18.0f, valStr, TextRole::MONO, Palette::TEXT_WHITE);
         }
     }
 }
@@ -1086,7 +1140,7 @@ static void renderSearchingView() {
     int n = static_cast<int>(arr.size());
 
     float leftMargin = 40.0f;
-    float rightMargin = 350.0f;
+    float rightMargin = 360.0f;
     float topMargin = 100.0f;
     float bottomMargin = 160.0f;
 
@@ -1095,9 +1149,9 @@ static void renderSearchingView() {
 
     float cellSpacing = 8.0f;
     float cellW = (renderW - static_cast<float>(n - 1) * cellSpacing) / static_cast<float>(n);
-    if (cellW > 58.0f) cellW = 58.0f;
+    if (cellW > 62.0f) cellW = 62.0f;
     if (cellW < 14.0f) cellW = 14.0f;
-    float cellH = 58.0f;
+    float cellH = 62.0f;
 
     float actualTotalW = static_cast<float>(n) * cellW + static_cast<float>(n - 1) * cellSpacing;
     float startX = leftMargin + (std::max)(0.0f, (renderW - actualTotalW) * 0.5f);
@@ -1111,8 +1165,7 @@ static void renderSearchingView() {
         if (snap.boundL >= 0 && snap.boundR >= 0) {
             if (i >= snap.boundL && i <= snap.boundR) {
                 cellCol = Palette::CARD_BG;
-            }
-            else {
+            } else {
                 cellCol = Palette::INACTIVE;
             }
         }
@@ -1120,8 +1173,7 @@ static void renderSearchingView() {
         if (i == snap.indexA) {
             if (snap.opType == OperationType::COMPARE) {
                 cellCol = Palette::COMPARE;
-            }
-            else if (snap.opType == OperationType::FOUND) {
+            } else if (snap.opType == OperationType::FOUND) {
                 cellCol = Palette::SUCCESS;
             }
         }
@@ -1142,35 +1194,39 @@ static void renderSearchingView() {
 
         if (cellW >= 16.0f) {
             std::string vStr = std::to_string(arr[i]);
-            int sw = getStringWidth(GLUT_BITMAP_HELVETICA_18, vStr);
+            int sw = getTextWidth(vStr, TextRole::SUBTITLE);
             Color4f tc = (cellCol.r > 0.8f && cellCol.g > 0.7f) ? Palette::BG_DARK : Palette::TEXT_WHITE;
-            drawBitmapString(x + (cellW - static_cast<float>(sw)) * 0.5f, y + cellH * 0.60f, GLUT_BITMAP_HELVETICA_18, vStr, tc);
+            drawText(x + (cellW - static_cast<float>(sw)) * 0.5f, y + cellH * 0.62f, vStr, TextRole::SUBTITLE, tc);
 
             std::string idxStr = std::to_string(i);
-            int isw = getStringWidth(GLUT_BITMAP_HELVETICA_12, idxStr);
-            drawBitmapString(x + (cellW - static_cast<float>(isw)) * 0.5f, y + cellH + 20.0f, GLUT_BITMAP_HELVETICA_12, idxStr, Palette::TEXT_MUTED);
+            int isw = getTextWidth(idxStr, TextRole::BODY);
+            drawText(x + (cellW - static_cast<float>(isw)) * 0.5f, y + cellH + 18.0f, idxStr, TextRole::BODY, Palette::TEXT_MUTED);
         }
     }
 }
 
-static void renderUIOverlay() {
-    if (app.screen == ScreenState::HOME_MENU) return;
-
-    // Buttons
+static void renderVisualizerUIOverlay() {
     for (size_t i = 0; i < app.buttons.size(); ++i) {
         const Button& b = app.buttons[i];
         Color4f c = b.isHovered ? Palette::BTN_HOVER : b.color;
         drawQuad(b.x, b.y, b.w, b.h, c);
         drawQuadOutline(b.x, b.y, b.w, b.h, 1.5f, Palette::CARD_BORDER);
-        int strW = getStringWidth(GLUT_BITMAP_HELVETICA_12, b.label);
-        drawBitmapString(b.x + (b.w - static_cast<float>(strW)) * 0.5f, b.y + b.h * 0.62f, GLUT_BITMAP_HELVETICA_12, b.label, Palette::TEXT_WHITE);
+
+        int strW = getTextWidth(b.label, TextRole::BODY);
+        drawText(b.x + (b.w - static_cast<float>(strW)) * 0.5f, b.y + b.h * 0.62f, b.label, TextRole::BODY, Palette::TEXT_WHITE);
     }
 
-    // Right-Side Status Dock
-    float dockX = static_cast<float>(app.windowW) - 335.0f;
-    float dockY = 65.0f;
-    float dockW = 320.0f;
-    float dockH = static_cast<float>(app.windowH) - 80.0f;
+    if (!app.notificationMessage.empty()) {
+        float notifW = 620.0f;
+        float notifX = 185.0f;
+        drawQuad(notifX, 68.0f, notifW, 26.0f, Palette::BOUNDARY);
+        drawText(notifX + 14.0f, 85.0f, app.notificationMessage, TextRole::BODY, Palette::TEXT_WHITE);
+    }
+
+    float dockX = static_cast<float>(app.windowW) - 345.0f;
+    float dockY = 70.0f;
+    float dockW = 330.0f;
+    float dockH = static_cast<float>(app.windowH) - 85.0f;
 
     drawQuad(dockX, dockY, dockW, dockH, Palette::PANEL_BG);
     drawQuadOutline(dockX, dockY, dockW, dockH, 1.5f, Palette::CARD_BORDER);
@@ -1179,22 +1235,23 @@ static void renderUIOverlay() {
     size_t curStep = isSorting ? app.sortIndex : app.searchIndex;
     size_t totalSteps = isSorting ? app.sortTimeline.size() : app.searchTimeline.size();
 
-    float textY = dockY + 215.0f;
-    drawBitmapString(dockX + 15.0f, textY, GLUT_BITMAP_HELVETICA_18, "LIVE METRICS & STATUS", Palette::BTN_ACTIVE);
+    float textY = dockY + 225.0f;
+    drawText(dockX + 18.0f, textY, "LIVE METRICS & STATUS", TextRole::SUBTITLE, Palette::TEXT_ACCENT);
     textY += 28.0f;
 
     std::string stepStr = "Step: " + std::to_string(curStep + 1) + " / " + std::to_string(totalSteps);
-    drawBitmapString(dockX + 15.0f, textY, GLUT_BITMAP_HELVETICA_12, stepStr, Palette::TEXT_WHITE);
+    drawText(dockX + 18.0f, textY, stepStr, TextRole::BODY, Palette::TEXT_WHITE);
     textY += 22.0f;
 
-    std::string speedStr = "Speed: " + std::to_string(app.getOpsPerSecond()) + " ops/sec | Size: " + std::to_string(app.arraySize);
-    drawBitmapString(dockX + 15.0f, textY, GLUT_BITMAP_HELVETICA_12, speedStr, Palette::TEXT_MUTED);
+    std::ostringstream spdSs;
+    spdSs.precision(1);
+    spdSs << "Speed: " << std::fixed << app.getSpeedMultiplier() << "x (" << app.getOpsPerSecond() << " ops/sec)";
+    drawText(dockX + 18.0f, textY, spdSs.str(), TextRole::BODY, Palette::TEXT_MUTED);
     textY += 26.0f;
 
     if (totalSteps > 0 && curStep < totalSteps) {
         const AlgorithmSnapshot& snap = isSorting ? app.sortTimeline[curStep] : app.searchTimeline[curStep];
 
-        // Status Card
         float cardH = 50.0f;
         Color4f statusColor = Palette::BAR_DEFAULT;
         std::string statusTitle = "IDLE / RUNNING";
@@ -1202,153 +1259,303 @@ static void renderUIOverlay() {
         if (snap.opType == OperationType::COMPARE) {
             statusColor = Palette::COMPARE;
             statusTitle = "COMPARING";
-        }
-        else if (snap.opType == OperationType::SWAP) {
+        } else if (snap.opType == OperationType::SWAP) {
             statusColor = Palette::ACTIVE_OP;
             statusTitle = "SWAPPING";
-        }
-        else if (snap.opType == OperationType::OVERWRITE) {
+        } else if (snap.opType == OperationType::OVERWRITE) {
             statusColor = Palette::ACTIVE_OP;
             statusTitle = "OVERWRITING / MERGING";
-        }
-        else if (snap.opType == OperationType::VISIT) {
+        } else if (snap.opType == OperationType::VISIT) {
             statusColor = Palette::COMPARE;
             statusTitle = "INSPECTING";
-        }
-        else if (snap.opType == OperationType::BOUND_UPDATE) {
+        } else if (snap.opType == OperationType::BOUND_UPDATE) {
             statusColor = Palette::BOUNDARY;
             statusTitle = "PARTITIONING";
-        }
-        else if (snap.opType == OperationType::COMPLETED) {
+        } else if (snap.opType == OperationType::COMPLETED) {
             statusColor = Palette::SUCCESS;
             statusTitle = "SORTING COMPLETE";
-        }
-        else if (snap.opType == OperationType::FOUND) {
+        } else if (snap.opType == OperationType::FOUND) {
             statusColor = Palette::SUCCESS;
             statusTitle = "TARGET FOUND";
-        }
-        else if (snap.opType == OperationType::NOT_FOUND) {
+        } else if (snap.opType == OperationType::NOT_FOUND) {
             statusColor = Palette::ACTIVE_OP;
             statusTitle = "TARGET NOT FOUND";
         }
 
-        drawQuad(dockX + 15.0f, textY, dockW - 30.0f, cardH, Palette::CARD_BG);
-        drawQuadOutline(dockX + 15.0f, textY, dockW - 30.0f, cardH, 2.0f, statusColor);
-        drawBitmapString(dockX + 25.0f, textY + 22.0f, GLUT_BITMAP_HELVETICA_12, "CURRENT OPERATION", Palette::TEXT_MUTED);
-        drawBitmapString(dockX + 25.0f, textY + 40.0f, GLUT_BITMAP_HELVETICA_18, statusTitle, statusColor);
+        drawQuad(dockX + 16.0f, textY, dockW - 32.0f, cardH, Palette::CARD_BG);
+        drawQuadOutline(dockX + 16.0f, textY, dockW - 32.0f, cardH, 2.0f, statusColor);
+        drawText(dockX + 26.0f, textY + 20.0f, "CURRENT OPERATION", TextRole::BODY, Palette::TEXT_MUTED);
+        drawText(dockX + 26.0f, textY + 40.0f, statusTitle, TextRole::SUBTITLE, statusColor);
         textY += cardH + 18.0f;
 
         std::string cmpStr = "Comparisons: " + std::to_string(snap.comparisons);
-        drawBitmapString(dockX + 15.0f, textY, GLUT_BITMAP_HELVETICA_12, cmpStr, Palette::COMPARE);
+        drawText(dockX + 18.0f, textY, cmpStr, TextRole::BODY, Palette::COMPARE);
         textY += 20.0f;
 
         if (isSorting) {
             std::string swpStr = "Swaps / Overwrites: " + std::to_string(snap.swaps);
-            drawBitmapString(dockX + 15.0f, textY, GLUT_BITMAP_HELVETICA_12, swpStr, Palette::ACTIVE_OP);
+            drawText(dockX + 18.0f, textY, swpStr, TextRole::BODY, Palette::ACTIVE_OP);
             textY += 20.0f;
-        }
-        else {
+        } else {
             std::string tgtStr = "Target: " + std::to_string(snap.target) + " | Range: [" + std::to_string(snap.boundL) + ".." + std::to_string(snap.boundR) + "]";
-            drawBitmapString(dockX + 15.0f, textY, GLUT_BITMAP_HELVETICA_12, tgtStr, Palette::BOUNDARY);
+            drawText(dockX + 18.0f, textY, tgtStr, TextRole::BODY, Palette::BOUNDARY);
             textY += 20.0f;
         }
 
         textY += 6.0f;
-        drawBitmapString(dockX + 15.0f, textY, GLUT_BITMAP_HELVETICA_12, "Step Narrative:", Palette::TEXT_WHITE);
-        textY += 18.0f;
+        drawText(dockX + 18.0f, textY, "Narrative:", TextRole::BODY, Palette::TEXT_WHITE);
+        textY += 16.0f;
 
         std::string desc = snap.description;
-        size_t lineMax = 36;
+        size_t lineMax = 38;
         for (size_t i = 0; i < desc.length(); i += lineMax) {
             std::string line = desc.substr(i, lineMax);
-            drawBitmapString(dockX + 15.0f, textY, GLUT_BITMAP_HELVETICA_12, line, Palette::TEXT_MUTED);
-            textY += 16.0f;
+            drawText(dockX + 18.0f, textY, line, TextRole::BODY, Palette::TEXT_MUTED);
+            textY += 15.0f;
         }
     }
 
     // Complexity Card
-    textY = dockY + dockH - 85.0f;
-    drawQuad(dockX + 12.0f, textY, dockW - 24.0f, 75.0f, Palette::CARD_BG);
-    drawQuadOutline(dockX + 12.0f, textY, dockW - 24.0f, 75.0f, 1.0f, Palette::CARD_BORDER);
-    textY += 20.0f;
+    textY = dockY + dockH - 90.0f;
+    drawQuad(dockX + 12.0f, textY, dockW - 24.0f, 80.0f, Palette::CARD_BG);
+    drawQuadOutline(dockX + 12.0f, textY, dockW - 24.0f, 80.0f, 1.0f, Palette::CARD_BORDER);
+    textY += 22.0f;
 
     if (isSorting) {
         if (app.currentSortAlg == SortAlgorithm::BUBBLE_SORT) {
-            drawBitmapString(dockX + 20.0f, textY, GLUT_BITMAP_HELVETICA_12, "Bubble Sort Complexity", Palette::COMPARE);
-            drawBitmapString(dockX + 20.0f, textY + 18.0f, GLUT_BITMAP_HELVETICA_12, "Time: Best O(n), Avg/Worst O(n^2)", Palette::TEXT_WHITE);
-            drawBitmapString(dockX + 20.0f, textY + 36.0f, GLUT_BITMAP_HELVETICA_12, "Space: O(1) Auxiliary", Palette::TEXT_MUTED);
+            drawText(dockX + 22.0f, textY, "Bubble Sort Complexity", TextRole::BODY, Palette::COMPARE);
+            drawText(dockX + 22.0f, textY + 20.0f, "Time: Best O(n), Avg/Worst O(n^2)", TextRole::BODY, Palette::TEXT_WHITE);
+            drawText(dockX + 22.0f, textY + 38.0f, "Space: O(1) Auxiliary", TextRole::BODY, Palette::TEXT_MUTED);
+        } else if (app.currentSortAlg == SortAlgorithm::SELECTION_SORT) {
+            drawText(dockX + 22.0f, textY, "Selection Sort Complexity", TextRole::BODY, Palette::COMPARE);
+            drawText(dockX + 22.0f, textY + 20.0f, "Time: Best/Avg/Worst O(n^2)", TextRole::BODY, Palette::TEXT_WHITE);
+            drawText(dockX + 22.0f, textY + 38.0f, "Space: O(1) Auxiliary", TextRole::BODY, Palette::TEXT_MUTED);
+        } else if (app.currentSortAlg == SortAlgorithm::INSERTION_SORT) {
+            drawText(dockX + 22.0f, textY, "Insertion Sort Complexity", TextRole::BODY, Palette::COMPARE);
+            drawText(dockX + 22.0f, textY + 20.0f, "Time: Best O(n), Avg/Worst O(n^2)", TextRole::BODY, Palette::TEXT_WHITE);
+            drawText(dockX + 22.0f, textY + 38.0f, "Space: O(1) Auxiliary", TextRole::BODY, Palette::TEXT_MUTED);
+        } else if (app.currentSortAlg == SortAlgorithm::MERGE_SORT) {
+            drawText(dockX + 22.0f, textY, "Merge Sort Complexity", TextRole::BODY, Palette::COMPARE);
+            drawText(dockX + 22.0f, textY + 20.0f, "Time: Best/Avg/Worst O(n log n)", TextRole::BODY, Palette::TEXT_WHITE);
+            drawText(dockX + 22.0f, textY + 38.0f, "Space: O(n) Auxiliary", TextRole::BODY, Palette::TEXT_MUTED);
         }
-        else if (app.currentSortAlg == SortAlgorithm::SELECTION_SORT) {
-            drawBitmapString(dockX + 20.0f, textY, GLUT_BITMAP_HELVETICA_12, "Selection Sort Complexity", Palette::COMPARE);
-            drawBitmapString(dockX + 20.0f, textY + 18.0f, GLUT_BITMAP_HELVETICA_12, "Time: Best/Avg/Worst O(n^2)", Palette::TEXT_WHITE);
-            drawBitmapString(dockX + 20.0f, textY + 36.0f, GLUT_BITMAP_HELVETICA_12, "Space: O(1) Auxiliary", Palette::TEXT_MUTED);
-        }
-        else if (app.currentSortAlg == SortAlgorithm::INSERTION_SORT) {
-            drawBitmapString(dockX + 20.0f, textY, GLUT_BITMAP_HELVETICA_12, "Insertion Sort Complexity", Palette::COMPARE);
-            drawBitmapString(dockX + 20.0f, textY + 18.0f, GLUT_BITMAP_HELVETICA_12, "Time: Best O(n), Avg/Worst O(n^2)", Palette::TEXT_WHITE);
-            drawBitmapString(dockX + 20.0f, textY + 36.0f, GLUT_BITMAP_HELVETICA_12, "Space: O(1) Auxiliary", Palette::TEXT_MUTED);
-        }
-        else if (app.currentSortAlg == SortAlgorithm::MERGE_SORT) {
-            drawBitmapString(dockX + 20.0f, textY, GLUT_BITMAP_HELVETICA_12, "Merge Sort Complexity", Palette::COMPARE);
-            drawBitmapString(dockX + 20.0f, textY + 18.0f, GLUT_BITMAP_HELVETICA_12, "Time: Best/Avg/Worst O(n log n)", Palette::TEXT_WHITE);
-            drawBitmapString(dockX + 20.0f, textY + 36.0f, GLUT_BITMAP_HELVETICA_12, "Space: O(n) Auxiliary", Palette::TEXT_MUTED);
-        }
-    }
-    else {
+    } else {
         if (app.currentSearchAlg == SearchAlgorithm::LINEAR_SEARCH) {
-            drawBitmapString(dockX + 20.0f, textY, GLUT_BITMAP_HELVETICA_12, "Linear Search Complexity", Palette::BTN_ACTIVE);
-            drawBitmapString(dockX + 20.0f, textY + 18.0f, GLUT_BITMAP_HELVETICA_12, "Time: Best O(1), Avg/Worst O(n)", Palette::TEXT_WHITE);
-            drawBitmapString(dockX + 20.0f, textY + 36.0f, GLUT_BITMAP_HELVETICA_12, "Space: O(1)", Palette::TEXT_MUTED);
-        }
-        else if (app.currentSearchAlg == SearchAlgorithm::BINARY_SEARCH) {
-            drawBitmapString(dockX + 20.0f, textY, GLUT_BITMAP_HELVETICA_12, "Binary Search (Sorted Array)", Palette::BTN_ACTIVE);
-            drawBitmapString(dockX + 20.0f, textY + 18.0f, GLUT_BITMAP_HELVETICA_12, "Time: Best O(1), Avg/Worst O(log n)", Palette::TEXT_WHITE);
-            drawBitmapString(dockX + 20.0f, textY + 36.0f, GLUT_BITMAP_HELVETICA_12, "Space: O(1)", Palette::TEXT_MUTED);
-        }
-        else {
-            drawBitmapString(dockX + 20.0f, textY, GLUT_BITMAP_HELVETICA_12, "Jump Search (Sorted Array)", Palette::BTN_ACTIVE);
-            drawBitmapString(dockX + 20.0f, textY + 18.0f, GLUT_BITMAP_HELVETICA_12, "Time: O(sqrt(n))", Palette::TEXT_WHITE);
-            drawBitmapString(dockX + 20.0f, textY + 36.0f, GLUT_BITMAP_HELVETICA_12, "Space: O(1)", Palette::TEXT_MUTED);
+            drawText(dockX + 22.0f, textY, "Linear Search Complexity", TextRole::BODY, Palette::TEXT_ACCENT);
+            drawText(dockX + 22.0f, textY + 20.0f, "Time: Best O(1), Avg/Worst O(n)", TextRole::BODY, Palette::TEXT_WHITE);
+            drawText(dockX + 22.0f, textY + 38.0f, "Space: O(1)", TextRole::BODY, Palette::TEXT_MUTED);
+        } else if (app.currentSearchAlg == SearchAlgorithm::BINARY_SEARCH) {
+            drawText(dockX + 22.0f, textY, "Binary Search (Sorted Array)", TextRole::BODY, Palette::TEXT_ACCENT);
+            drawText(dockX + 22.0f, textY + 20.0f, "Time: Best O(1), Avg/Worst O(log n)", TextRole::BODY, Palette::TEXT_WHITE);
+            drawText(dockX + 22.0f, textY + 38.0f, "Space: O(1)", TextRole::BODY, Palette::TEXT_MUTED);
+        } else {
+            drawText(dockX + 22.0f, textY, "Jump Search (Sorted Array)", TextRole::BODY, Palette::TEXT_ACCENT);
+            drawText(dockX + 22.0f, textY + 20.0f, "Time: O(sqrt(n))", TextRole::BODY, Palette::TEXT_WHITE);
+            drawText(dockX + 22.0f, textY + 38.0f, "Space: O(1)", TextRole::BODY, Palette::TEXT_MUTED);
         }
     }
 
     // Graphical Swatch Legend (Bottom Bar)
     float legY = static_cast<float>(app.windowH) - 45.0f;
-    float swatchSz = 12.0f;
+    float swatchSz = 14.0f;
 
     auto drawLegendItem = [&](float x, const Color4f& color, const std::string& label) {
         drawQuad(x, legY - swatchSz + 2.0f, swatchSz, swatchSz, color);
         drawQuadOutline(x, legY - swatchSz + 2.0f, swatchSz, swatchSz, 1.0f, Palette::TEXT_WHITE);
-        drawBitmapString(x + swatchSz + 8.0f, legY, GLUT_BITMAP_HELVETICA_12, label, Palette::TEXT_WHITE);
-        };
+        drawText(x + swatchSz + 8.0f, legY, label, TextRole::BODY, Palette::TEXT_WHITE);
+    };
 
-    drawLegendItem(40.0f, Palette::BAR_DEFAULT, "Default");
-    drawLegendItem(170.0f, Palette::COMPARE, "Comparing");
-    drawLegendItem(310.0f, Palette::ACTIVE_OP, "Active / Swap");
-    drawLegendItem(470.0f, Palette::SUCCESS, "Sorted / Found");
-    drawLegendItem(630.0f, Palette::BOUNDARY, "Boundary / Segment");
+    drawLegendItem(40.0f,  Palette::BAR_DEFAULT, "Default");
+    drawLegendItem(170.0f, Palette::COMPARE,     "Comparing");
+    drawLegendItem(310.0f, Palette::ACTIVE_OP,   "Active / Swap");
+    drawLegendItem(470.0f, Palette::SUCCESS,     "Sorted / Found");
+    drawLegendItem(630.0f, Palette::BOUNDARY,    "Boundary / Range");
 }
 
 // ============================================================================
-// GLUT CALLBACKS & LIFECYCLE
+// CONFIG DASHBOARD RENDERING (MULTI-LINE FULL DISPLAY)
 // ============================================================================
-static void display() {
+static void renderModernConfigDashboard() {
     glClearColor(Palette::BG_DARK.r, Palette::BG_DARK.g, Palette::BG_DARK.b, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    // Top Header
+    drawText(55.0f, 55.0f, "ALGO VISION", TextRole::DISPLAY, Palette::TEXT_ACCENT);
+    drawText(275.0f, 52.0f, "// Interactive Algorithm Visualizer", TextRole::SUBTITLE, Palette::TEXT_MUTED);
 
-    if (app.screen == ScreenState::HOME_MENU) {
-        renderHomeScreen();
+    drawQuad(55.0f, 75.0f, static_cast<float>(app.windowW) - 110.0f, 2.0f, Palette::CARD_BORDER);
+
+    // Section 1 Card (Array Configuration)
+    float card1X = 45.0f;
+    float card1Y = 95.0f;
+    float card1W = 590.0f;
+    float card1H = 405.0f;
+
+    drawQuad(card1X, card1Y, card1W, card1H, Palette::CARD_BG);
+    drawQuadOutline(card1X, card1Y, card1W, card1H, 1.5f, Palette::CARD_BORDER);
+    drawText(card1X + 20.0f, card1Y + 35.0f, "1. ARRAY CONFIGURATION", TextRole::SUBTITLE, Palette::TEXT_WHITE);
+
+    if (app.inputMode == InputMode::MANUAL) {
+        float boxX = card1X + 20.0f;
+        float boxY = card1Y + 140.0f;
+        float boxW = card1W - 40.0f;
+        float boxH = 46.0f;
+
+        drawQuad(boxX, boxY, boxW, boxH, Color4f(0.06f, 0.08f, 0.12f, 1.0f));
+        drawQuadOutline(boxX, boxY, boxW, boxH, app.typingInManualInput ? 2.0f : 1.0f,
+                        app.typingInManualInput ? Palette::TEXT_ACCENT : Palette::CARD_BORDER);
+
+        std::string textToDisplay = app.manualInputStr + (app.typingInManualInput ? "_" : "");
+        drawText(boxX + 16.0f, boxY + 28.0f, textToDisplay, TextRole::MONO, Palette::TEXT_WHITE);
+
+        drawText(boxX, boxY + 68.0f, "Click box to edit. Enter 3-50 integers (1-100) separated by commas.", TextRole::BODY, Palette::TEXT_MUTED);
+    } else {
+        float sliderX = card1X + 20.0f;
+        float sliderY = card1Y + 160.0f;
+        float sliderW = 320.0f;
+
+        drawQuad(sliderX, sliderY, sliderW, 6.0f, Palette::CARD_BORDER);
+
+        float norm = static_cast<float>(app.arraySize - 3) / (50.0f - 3.0f);
+        float handleX = sliderX + norm * sliderW;
+        drawQuad(handleX - 10.0f, sliderY - 8.0f, 20.0f, 22.0f, Palette::TEXT_ACCENT);
+
+        std::string szStr = "Array Size: " + std::to_string(app.arraySize);
+        drawText(sliderX, sliderY - 18.0f, szStr, TextRole::BODY, Palette::TEXT_WHITE);
     }
-    else if (app.screen == ScreenState::SORTING_VIEW) {
-        renderSortingView();
-        renderUIOverlay();
+
+    // MULTI-LINE AUTO-WRAPPING DISPLAY: Renders every single item without truncation dots
+    float textStartX = card1X + 20.0f;
+    float currentTextY = card1Y + 245.0f;
+    float maxLineWidth = card1W - 40.0f;
+
+    std::string header = "Current Array (" + std::to_string(app.sortOriginal.size()) + " items): ";
+    std::string lineBuffer = header;
+
+    for (size_t i = 0; i < app.sortOriginal.size(); ++i) {
+        std::string numToken = std::to_string(app.sortOriginal[i]) + (i + 1 < app.sortOriginal.size() ? ", " : "");
+        
+        if (getTextWidth(lineBuffer + numToken, TextRole::MONO) > maxLineWidth) {
+            drawText(textStartX, currentTextY, lineBuffer, TextRole::MONO, Palette::TEXT_MUTED);
+            currentTextY += 16.0f;
+            lineBuffer = "  " + numToken;
+        } else {
+            lineBuffer += numToken;
+        }
     }
-    else if (app.screen == ScreenState::SEARCHING_VIEW) {
-        renderSearchingView();
-        renderUIOverlay();
+    if (!lineBuffer.empty()) {
+        drawText(textStartX, currentTextY, lineBuffer, TextRole::MONO, Palette::TEXT_MUTED);
+    }
+
+    // Speed Controls inside Section 1
+    float spdSliderX = card1X + 20.0f;
+    float spdSliderY = card1Y + 360.0f;
+    float spdSliderW = 320.0f;
+
+    drawQuad(card1X + 20.0f, card1Y + 305.0f, card1W - 40.0f, 1.0f, Palette::CARD_BORDER);
+    drawText(card1X + 20.0f, card1Y + 330.0f, "SIMULATION PLAYBACK SPEED", TextRole::BODY, Palette::TEXT_WHITE);
+
+    drawQuad(spdSliderX, spdSliderY, spdSliderW, 6.0f, Palette::CARD_BORDER);
+    float spdNorm = static_cast<float>(app.speedIndex) / static_cast<float>(app.speedSteps.size() - 1);
+    float spdHandleX = spdSliderX + spdNorm * spdSliderW;
+    drawQuad(spdHandleX - 10.0f, spdSliderY - 8.0f, 20.0f, 22.0f, Palette::TEXT_ACCENT);
+
+    std::ostringstream spdSs;
+    spdSs.precision(1);
+    spdSs << std::fixed << app.getSpeedMultiplier() << "x (" << app.getOpsPerSecond() << " ops/sec)";
+    drawText(spdSliderX + spdSliderW + 18.0f, spdSliderY + 5.0f, spdSs.str(), TextRole::BODY, Palette::TEXT_ACCENT);
+
+    // Section 2 Card (Operation & Algorithm Selection)
+    float card2X = 665.0f;
+    float card2Y = 95.0f;
+    float card2W = static_cast<float>(app.windowW) - card2X - 45.0f;
+    float card2H = 405.0f;
+
+    drawQuad(card2X, card2Y, card2W, card2H, Palette::CARD_BG);
+    drawQuadOutline(card2X, card2Y, card2W, card2H, 1.5f, Palette::CARD_BORDER);
+    drawText(card2X + 20.0f, card2Y + 35.0f, "2. ALGORITHM SELECTION", TextRole::SUBTITLE, Palette::TEXT_WHITE);
+
+    drawText(card2X + 20.0f, card2Y + 150.0f, "SELECT ACTIVE ALGORITHM:", TextRole::BODY, Palette::TEXT_MUTED);
+
+    if (app.selectedCategory == Category::SEARCHING) {
+        drawText(card2X + 20.0f, card2Y + 250.0f, "TARGET VALUE TO SEARCH:", TextRole::BODY, Palette::TEXT_WHITE);
+
+        float tgtBoxX = card2X + 20.0f;
+        float tgtBoxY = card2Y + 290.0f;
+        float tgtBoxW = 100.0f;
+        float tgtBoxH = 42.0f;
+
+        drawQuad(tgtBoxX, tgtBoxY, tgtBoxW, tgtBoxH, Color4f(0.06f, 0.08f, 0.12f, 1.0f));
+        drawQuadOutline(tgtBoxX, tgtBoxY, tgtBoxW, tgtBoxH, app.typingInTargetInput ? 2.0f : 1.0f,
+                        app.typingInTargetInput ? Palette::TEXT_ACCENT : Palette::CARD_BORDER);
+
+        std::string tgtDisp = app.searchTargetInputStr + (app.typingInTargetInput ? "_" : "");
+        drawText(tgtBoxX + 16.0f, tgtBoxY + 28.0f, tgtDisp, TextRole::MONO, Palette::TEXT_ACCENT);
+
+        if (app.currentSearchAlg == SearchAlgorithm::BINARY_SEARCH || app.currentSearchAlg == SearchAlgorithm::JUMP_SEARCH) {
+            drawText(card2X + 20.0f, card2Y + 360.0f, "* Note: Binary & Jump Search require sorted data and will auto-sort.", TextRole::BODY, Palette::ACTIVE_OP);
+        }
+    }
+
+    // Launch Area
+    drawQuad(45.0f, static_cast<float>(app.windowH) - 130.0f, static_cast<float>(app.windowW) - 90.0f, 1.5f, Palette::CARD_BORDER);
+
+    std::string readyStatus = "CONFIGURED: ";
+    if (app.selectedCategory == Category::SORTING) {
+        if (app.currentSortAlg == SortAlgorithm::BUBBLE_SORT) readyStatus += "Bubble Sort";
+        else if (app.currentSortAlg == SortAlgorithm::SELECTION_SORT) readyStatus += "Selection Sort";
+        else if (app.currentSortAlg == SortAlgorithm::INSERTION_SORT) readyStatus += "Insertion Sort";
+        else if (app.currentSortAlg == SortAlgorithm::MERGE_SORT) readyStatus += "Merge Sort";
+    } else {
+        if (app.currentSearchAlg == SearchAlgorithm::LINEAR_SEARCH) readyStatus += "Linear Search";
+        else if (app.currentSearchAlg == SearchAlgorithm::BINARY_SEARCH) readyStatus += "Binary Search";
+        else if (app.currentSearchAlg == SearchAlgorithm::JUMP_SEARCH) readyStatus += "Jump Search";
+        readyStatus += " (Target: " + std::to_string(app.searchTarget) + ")";
+    }
+    readyStatus += " | Elements: " + std::to_string(app.sortOriginal.size());
+    drawText(355.0f, static_cast<float>(app.windowH) - 72.0f, readyStatus, TextRole::SUBTITLE, Palette::TEXT_WHITE);
+
+    // Draw Dashboard Buttons
+    for (size_t i = 0; i < app.buttons.size(); ++i) {
+        const Button& b = app.buttons[i];
+        Color4f bg = b.isActive ? Palette::BTN_ACTIVE : (b.isHovered ? Palette::BTN_HOVER : b.color);
+        Color4f borderCol = b.isActive ? Palette::CARD_BORDER_ACT : Palette::CARD_BORDER;
+
+        if (b.id == 400) {
+            bg = b.isHovered ? Palette::BTN_LAUNCH_HOV : Palette::BTN_LAUNCH;
+            borderCol = Palette::SUCCESS;
+        }
+
+        drawQuad(b.x, b.y, b.w, b.h, bg);
+        drawQuadOutline(b.x, b.y, b.w, b.h, b.isActive ? 2.0f : 1.0f, borderCol);
+
+        TextRole textRole = (b.id == 400) ? TextRole::SUBTITLE : TextRole::BODY;
+        int strW = getTextWidth(b.label, textRole);
+        Color4f tc = (b.id == 400) ? Palette::BG_DARK : Palette::TEXT_WHITE;
+
+        drawText(b.x + (b.w - static_cast<float>(strW)) * 0.5f, b.y + b.h * 0.62f, b.label, textRole, tc);
+    }
+}
+
+// ============================================================================
+// MAIN GLUT CALLBACKS & ENTRY POINT
+// ============================================================================
+static void display() {
+    if (app.screen == ScreenState::CONFIG_SCREEN) {
+        renderModernConfigDashboard();
+    } else {
+        glClearColor(Palette::BG_DARK.r, Palette::BG_DARK.g, Palette::BG_DARK.b, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        if (app.screen == ScreenState::SORTING_VIEW) {
+            renderSortingView();
+        } else if (app.screen == ScreenState::SEARCHING_VIEW) {
+            renderSearchingView();
+        }
+        renderVisualizerUIOverlay();
     }
 
     glutSwapBuffers();
@@ -1371,17 +1578,14 @@ static void timer(int) {
     if (app.screen == ScreenState::SORTING_VIEW && app.sortPlaying) {
         if (app.sortIndex + 1 < app.sortTimeline.size()) {
             app.sortIndex++;
-        }
-        else {
+        } else {
             app.sortPlaying = false;
             app.rebuildButtons();
         }
-    }
-    else if (app.screen == ScreenState::SEARCHING_VIEW && app.searchPlaying) {
+    } else if (app.screen == ScreenState::SEARCHING_VIEW && app.searchPlaying) {
         if (app.searchIndex + 1 < app.searchTimeline.size()) {
             app.searchIndex++;
-        }
-        else {
+        } else {
             app.searchPlaying = false;
             app.rebuildButtons();
         }
@@ -1408,183 +1612,242 @@ static void mousePassiveMotion(int x, int y) {
 }
 
 static void mouseClick(int button, int state, int x, int y) {
-    if (button != GLUT_LEFT_BUTTON || state != GLUT_DOWN) return;
+    if (button != GLUT_LEFT_BUTTON) return;
 
-    for (size_t i = 0; i < app.buttons.size(); ++i) {
-        const Button& b = app.buttons[i];
-        if (b.contains(static_cast<float>(x), static_cast<float>(y))) {
-            switch (b.id) {
-            case 1:
-                app.screen = ScreenState::SORTING_VIEW;
-                app.sortPlaying = true;
-                app.buildSortTimeline();
-                app.rebuildButtons();
-                break;
-            case 2:
-                app.screen = ScreenState::SEARCHING_VIEW;
-                app.searchPlaying = true;
-                app.buildSearchTimeline();
-                app.rebuildButtons();
-                break;
-            case 3:
-                exit(0);
-                break;
-            case 10:
-                app.screen = ScreenState::HOME_MENU;
-                app.sortPlaying = false;
-                app.searchPlaying = false;
-                app.rebuildButtons();
-                break;
-            case 20:
-                app.currentSortAlg = SortAlgorithm::BUBBLE_SORT;
-                app.sortPlaying = true;
-                app.buildSortTimeline();
-                app.rebuildButtons();
-                break;
-            case 21:
-                app.currentSortAlg = SortAlgorithm::SELECTION_SORT;
-                app.sortPlaying = true;
-                app.buildSortTimeline();
-                app.rebuildButtons();
-                break;
-            case 22:
-                app.currentSortAlg = SortAlgorithm::INSERTION_SORT;
-                app.sortPlaying = true;
-                app.buildSortTimeline();
-                app.rebuildButtons();
-                break;
-            case 23:
-                app.currentSortAlg = SortAlgorithm::MERGE_SORT;
-                app.sortPlaying = true;
-                app.buildSortTimeline();
-                app.rebuildButtons();
-                break;
-            case 30:
-                app.currentSearchAlg = SearchAlgorithm::LINEAR_SEARCH;
-                app.searchPlaying = true;
-                app.buildSearchTimeline();
-                app.rebuildButtons();
-                break;
-            case 31:
-                app.currentSearchAlg = SearchAlgorithm::BINARY_SEARCH;
-                app.searchPlaying = true;
-                app.buildSearchTimeline();
-                app.rebuildButtons();
-                break;
-            case 32:
-                app.currentSearchAlg = SearchAlgorithm::JUMP_SEARCH;
-                app.searchPlaying = true;
-                app.buildSearchTimeline();
-                app.rebuildButtons();
-                break;
-            case 40:
-                if (app.screen == ScreenState::SORTING_VIEW) app.sortPlaying = !app.sortPlaying;
-                else app.searchPlaying = !app.searchPlaying;
-                app.rebuildButtons();
-                break;
-            case 41:
-                if (app.screen == ScreenState::SORTING_VIEW) {
-                    app.sortPlaying = false;
-                    if (app.sortIndex + 1 < app.sortTimeline.size()) app.sortIndex++;
-                }
-                else {
-                    app.searchPlaying = false;
-                    if (app.searchIndex + 1 < app.searchTimeline.size()) app.searchIndex++;
-                }
-                app.rebuildButtons();
-                break;
-            case 42:
-                if (app.screen == ScreenState::SORTING_VIEW) {
-                    app.sortPlaying = false;
-                    if (app.sortIndex > 0) app.sortIndex--;
-                }
-                else {
-                    app.searchPlaying = false;
-                    if (app.searchIndex > 0) app.searchIndex--;
-                }
-                app.rebuildButtons();
-                break;
-            case 43:
-                if (app.screen == ScreenState::SORTING_VIEW) {
-                    app.sortIndex = 0;
-                    app.sortPlaying = true;
-                }
-                else {
-                    app.searchIndex = 0;
-                    app.searchPlaying = true;
-                }
-                app.rebuildButtons();
-                break;
-            case 44:
-                if (app.screen == ScreenState::SORTING_VIEW) app.generateRandomSortArray();
-                else app.generateRandomSearchArray();
-                app.rebuildButtons();
-                break;
-            case 45:
-                if (app.speedIndex > 0) app.speedIndex--;
-                app.rebuildButtons();
-                break;
-            case 46:
-                if (app.speedIndex + 1 < app.speedSteps.size()) app.speedIndex++;
-                app.rebuildButtons();
-                break;
-            case 47:
-                if (app.arraySize > 6) {
-                    app.arraySize -= 2;
-                    if (app.screen == ScreenState::SORTING_VIEW) app.generateRandomSortArray();
-                    else app.generateRandomSearchArray();
-                }
-                break;
-            case 48:
-                if (app.arraySize < 48) {
-                    app.arraySize += 2;
-                    if (app.screen == ScreenState::SORTING_VIEW) app.generateRandomSortArray();
-                    else app.generateRandomSearchArray();
-                }
-                break;
-            case 50:
-                if (!app.searchOriginal.empty()) {
-                    app.searchTarget = app.searchOriginal[rand() % app.searchOriginal.size()];
-                    app.buildSearchTimeline();
-                }
-                break;
-            case 51:
-                app.searchTarget = 999;
-                app.buildSearchTimeline();
-                break;
+    float fx = static_cast<float>(x);
+    float fy = static_cast<float>(y);
+
+    if (state == GLUT_DOWN) {
+        if (app.screen == ScreenState::CONFIG_SCREEN) {
+            if (app.inputMode == InputMode::MANUAL && fx >= 65.0f && fx <= 615.0f && fy >= 235.0f && fy <= 281.0f) {
+                app.typingInManualInput = true;
+                app.typingInTargetInput = false;
+            } else if (app.selectedCategory == Category::SEARCHING && fx >= 685.0f && fx <= 785.0f && fy >= 385.0f && fy <= 427.0f) {
+                app.typingInTargetInput = true;
+                app.typingInManualInput = false;
+            } else {
+                app.typingInManualInput = false;
+                app.typingInTargetInput = false;
             }
-            glutPostRedisplay();
-            return;
+
+            if (app.inputMode == InputMode::RANDOM && fx >= 65.0f && fx <= 385.0f && fy >= 245.0f && fy <= 275.0f) {
+                float norm = (fx - 65.0f) / 320.0f;
+                norm = (std::max)(0.0f, (std::min)(1.0f, norm));
+                app.arraySize = 3 + static_cast<int>(norm * (50.0f - 3.0f));
+                app.generateRandomArray();
+            }
+
+            if (fx >= 65.0f && fx <= 385.0f && fy >= 445.0f && fy <= 475.0f) {
+                float norm = (fx - 65.0f) / 320.0f;
+                norm = (std::max)(0.0f, (std::min)(1.0f, norm));
+                app.speedIndex = static_cast<size_t>(norm * (app.speedSteps.size() - 1));
+            }
+        }
+
+        for (size_t i = 0; i < app.buttons.size(); ++i) {
+            const Button& b = app.buttons[i];
+            if (b.contains(fx, fy)) {
+                switch (b.id) {
+                case 101:
+                    app.inputMode = InputMode::MANUAL;
+                    app.parseManualInput();
+                    app.rebuildButtons();
+                    break;
+                case 102:
+                    app.inputMode = InputMode::RANDOM;
+                    app.generateRandomArray();
+                    app.rebuildButtons();
+                    break;
+                case 103:
+                    app.generateRandomArray();
+                    app.rebuildButtons();
+                    break;
+                case 201:
+                    app.selectedCategory = Category::SORTING;
+                    app.rebuildButtons();
+                    break;
+                case 202:
+                    app.selectedCategory = Category::SEARCHING;
+                    app.rebuildButtons();
+                    break;
+
+                case 301: app.currentSortAlg = SortAlgorithm::BUBBLE_SORT; app.rebuildButtons(); break;
+                case 302: app.currentSortAlg = SortAlgorithm::SELECTION_SORT; app.rebuildButtons(); break;
+                case 303: app.currentSortAlg = SortAlgorithm::INSERTION_SORT; app.rebuildButtons(); break;
+                case 304: app.currentSortAlg = SortAlgorithm::MERGE_SORT; app.rebuildButtons(); break;
+
+                case 311: app.currentSearchAlg = SearchAlgorithm::LINEAR_SEARCH; app.rebuildButtons(); break;
+                case 312: app.currentSearchAlg = SearchAlgorithm::BINARY_SEARCH; app.rebuildButtons(); break;
+                case 313: app.currentSearchAlg = SearchAlgorithm::JUMP_SEARCH; app.rebuildButtons(); break;
+
+                case 314:
+                    if (!app.searchOriginal.empty()) {
+                        app.searchTarget = app.searchOriginal[rand() % app.searchOriginal.size()];
+                        app.searchTargetInputStr = std::to_string(app.searchTarget);
+                        app.rebuildButtons();
+                    }
+                    break;
+
+                case 400:
+                    if (app.selectedCategory == Category::SORTING) {
+                        app.screen = ScreenState::SORTING_VIEW;
+                        app.buildSortTimeline();
+                    } else {
+                        app.screen = ScreenState::SEARCHING_VIEW;
+                        app.buildSearchTimeline();
+                    }
+                    app.rebuildButtons();
+                    break;
+
+                case 10:
+                    app.screen = ScreenState::CONFIG_SCREEN;
+                    app.sortPlaying = false;
+                    app.searchPlaying = false;
+                    app.rebuildButtons();
+                    break;
+
+                case 20: app.currentSortAlg = SortAlgorithm::BUBBLE_SORT; app.buildSortTimeline(); app.rebuildButtons(); break;
+                case 21: app.currentSortAlg = SortAlgorithm::SELECTION_SORT; app.buildSortTimeline(); app.rebuildButtons(); break;
+                case 22: app.currentSortAlg = SortAlgorithm::INSERTION_SORT; app.buildSortTimeline(); app.rebuildButtons(); break;
+                case 23: app.currentSortAlg = SortAlgorithm::MERGE_SORT; app.buildSortTimeline(); app.rebuildButtons(); break;
+
+                case 30: app.currentSearchAlg = SearchAlgorithm::LINEAR_SEARCH; app.buildSearchTimeline(); app.rebuildButtons(); break;
+                case 31: app.currentSearchAlg = SearchAlgorithm::BINARY_SEARCH; app.buildSearchTimeline(); app.rebuildButtons(); break;
+                case 32: app.currentSearchAlg = SearchAlgorithm::JUMP_SEARCH; app.buildSearchTimeline(); app.rebuildButtons(); break;
+
+                case 40:
+                    if (app.screen == ScreenState::SORTING_VIEW) app.sortPlaying = !app.sortPlaying;
+                    else app.searchPlaying = !app.searchPlaying;
+                    app.rebuildButtons();
+                    break;
+                case 41:
+                    if (app.screen == ScreenState::SORTING_VIEW) {
+                        app.sortPlaying = false;
+                        if (app.sortIndex + 1 < app.sortTimeline.size()) app.sortIndex++;
+                    } else {
+                        app.searchPlaying = false;
+                        if (app.searchIndex + 1 < app.searchTimeline.size()) app.searchIndex++;
+                    }
+                    app.rebuildButtons();
+                    break;
+                case 42:
+                    if (app.screen == ScreenState::SORTING_VIEW) {
+                        app.sortPlaying = false;
+                        if (app.sortIndex > 0) app.sortIndex--;
+                    } else {
+                        app.searchPlaying = false;
+                        if (app.searchIndex > 0) app.searchIndex--;
+                    }
+                    app.rebuildButtons();
+                    break;
+                case 43:
+                    if (app.screen == ScreenState::SORTING_VIEW) {
+                        app.sortIndex = 0;
+                        app.sortPlaying = true;
+                    } else {
+                        app.searchIndex = 0;
+                        app.searchPlaying = true;
+                    }
+                    app.rebuildButtons();
+                    break;
+                case 44:
+                    app.generateRandomArray();
+                    if (app.screen == ScreenState::SORTING_VIEW) app.buildSortTimeline();
+                    else app.buildSearchTimeline();
+                    app.rebuildButtons();
+                    break;
+                case 45:
+                    if (app.speedIndex > 0) app.speedIndex--;
+                    app.rebuildButtons();
+                    break;
+                case 46:
+                    if (app.speedIndex + 1 < app.speedSteps.size()) app.speedIndex++;
+                    app.rebuildButtons();
+                    break;
+                case 47:
+                    if (app.arraySize > 6) {
+                        app.arraySize -= 2;
+                        app.generateRandomArray();
+                        if (app.screen == ScreenState::SORTING_VIEW) app.buildSortTimeline();
+                        else app.buildSearchTimeline();
+                    }
+                    break;
+                case 48:
+                    if (app.arraySize < 48) {
+                        app.arraySize += 2;
+                        app.generateRandomArray();
+                        if (app.screen == ScreenState::SORTING_VIEW) app.buildSortTimeline();
+                        else app.buildSearchTimeline();
+                    }
+                    break;
+                case 50:
+                    if (!app.searchOriginal.empty()) {
+                        app.searchTarget = app.searchOriginal[rand() % app.searchOriginal.size()];
+                        app.searchTargetInputStr = std::to_string(app.searchTarget);
+                        app.buildSearchTimeline();
+                    }
+                    break;
+                case 51:
+                    app.searchTarget = 999;
+                    app.searchTargetInputStr = "999";
+                    app.buildSearchTimeline();
+                    break;
+                }
+                glutPostRedisplay();
+                return;
+            }
         }
     }
 }
 
 static void keyboard(unsigned char key, int, int) {
+    if (app.typingInManualInput) {
+        if (key == 13) {
+            app.typingInManualInput = false;
+            app.parseManualInput();
+            app.rebuildButtons();
+        } else if (key == 8 || key == 127) {
+            if (!app.manualInputStr.empty()) {
+                app.manualInputStr.pop_back();
+            }
+        } else if ((key >= '0' && key <= '9') || key == ',' || key == ' ') {
+            app.manualInputStr.push_back(static_cast<char>(key));
+        }
+        glutPostRedisplay();
+        return;
+    }
+
+    if (app.typingInTargetInput) {
+        if (key == 13) {
+            app.typingInTargetInput = false;
+            try {
+                app.searchTarget = std::stoi(app.searchTargetInputStr);
+            } catch (...) {}
+            app.rebuildButtons();
+        } else if (key == 8 || key == 127) {
+            if (!app.searchTargetInputStr.empty()) {
+                app.searchTargetInputStr.pop_back();
+            }
+        } else if (key >= '0' && key <= '9') {
+            if (app.searchTargetInputStr.length() < 4) {
+                app.searchTargetInputStr.push_back(static_cast<char>(key));
+            }
+        }
+        glutPostRedisplay();
+        return;
+    }
+
     if (key == 32) {
         if (app.screen == ScreenState::SORTING_VIEW) app.sortPlaying = !app.sortPlaying;
         else if (app.screen == ScreenState::SEARCHING_VIEW) app.searchPlaying = !app.searchPlaying;
         app.rebuildButtons();
-    }
-    else if (key == 'r' || key == 'R') {
+    } else if (key == 'r' || key == 'R') {
         if (app.screen == ScreenState::SORTING_VIEW) { app.sortIndex = 0; app.sortPlaying = true; }
         else { app.searchIndex = 0; app.searchPlaying = true; }
         app.rebuildButtons();
-    }
-    else if (key == '+' || key == '=') { // Speed Up
-        if (app.speedIndex + 1 < app.speedSteps.size()) {
-            app.speedIndex++;
-            app.rebuildButtons();
-        }
-    }
-    else if (key == '-' || key == '_') { // Speed Down
-        if (app.speedIndex > 0) {
-            app.speedIndex--;
-            app.rebuildButtons();
-        }
-    }
-    else if (key == 27) {
-        if (app.screen != ScreenState::HOME_MENU) {
-            app.screen = ScreenState::HOME_MENU;
+    } else if (key == 27) {
+        if (app.screen != ScreenState::CONFIG_SCREEN) {
+            app.screen = ScreenState::CONFIG_SCREEN;
             app.sortPlaying = false;
             app.searchPlaying = false;
             app.rebuildButtons();
@@ -1594,27 +1857,36 @@ static void keyboard(unsigned char key, int, int) {
 }
 
 static void specialKeys(int key, int, int) {
-    if (key == GLUT_KEY_RIGHT) {
+    if (key == GLUT_KEY_UP) {
+        if (app.speedIndex + 1 < app.speedSteps.size()) {
+            app.speedIndex++;
+            app.rebuildButtons();
+        }
+    } else if (key == GLUT_KEY_DOWN) {
+        if (app.speedIndex > 0) {
+            app.speedIndex--;
+            app.rebuildButtons();
+        }
+    } else if (key == GLUT_KEY_RIGHT) {
         if (app.screen == ScreenState::SORTING_VIEW) {
             app.sortPlaying = false;
             if (app.sortIndex + 1 < app.sortTimeline.size()) app.sortIndex++;
-        }
-        else {
+        } else if (app.screen == ScreenState::SEARCHING_VIEW) {
             app.searchPlaying = false;
             if (app.searchIndex + 1 < app.searchTimeline.size()) app.searchIndex++;
         }
-    }
-    else if (key == GLUT_KEY_LEFT) {
+        app.rebuildButtons();
+    } else if (key == GLUT_KEY_LEFT) {
         if (app.screen == ScreenState::SORTING_VIEW) {
             app.sortPlaying = false;
             if (app.sortIndex > 0) app.sortIndex--;
-        }
-        else {
+        } else if (app.screen == ScreenState::SEARCHING_VIEW) {
             app.searchPlaying = false;
             if (app.searchIndex > 0) app.searchIndex--;
         }
+        app.rebuildButtons();
     }
-    app.rebuildButtons();
+
     glutPostRedisplay();
 }
 
@@ -1622,7 +1894,7 @@ int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowSize(app.windowW, app.windowH);
-    glutInitWindowPosition(80, 60);
+    glutInitWindowPosition(80, 50);
     glutCreateWindow("ALGO VISION - Searching & Sorting Algorithm Visualizer");
 
     glEnable(GL_BLEND);
